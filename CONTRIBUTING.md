@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve OpenModel Preview.
+Thanks for helping improve LingdongAI 3D Model Preview.
 
 ## Before You Start
 

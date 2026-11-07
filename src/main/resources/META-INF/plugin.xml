@@ -1,10 +1,10 @@
 <idea-plugin>
     <id>com.fin.openmodel.preview</id>
-    <name>OpenModel Preview</name>
-    <vendor>FIN Tools</vendor>
+    <name>LingdongAI 3D Model Preview</name>
+    <vendor>LingdongAI</vendor>
 
     <description><![CDATA[
-        Preview OpenSCAD, STL, OBJ, and PLY models directly in JetBrains IDEs.
+        Preview OpenSCAD, STL, OBJ, and PLY models directly in JetBrains IDEs with LingdongAI.
         All parsing and rendering stays local. OpenSCAD files are rendered with the
         OpenSCAD executable installed on the same computer.
     ]]></description>

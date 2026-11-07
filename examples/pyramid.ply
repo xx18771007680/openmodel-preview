@@ -1,6 +1,6 @@
 ply
 format ascii 1.0
-comment OpenModel Preview PLY sample
+comment LingdongAI 3D Model Preview PLY sample
 element vertex 5
 property float x
 property float y

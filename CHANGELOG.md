@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 - 2026-11-07
+
+- Rename the public plugin to LingdongAI 3D Model Preview.
+- Keep the stable plugin ID so existing installations can upgrade normally.
+
 ## 0.1.0 - 2026-11-07
 
 - Add local OpenSCAD preview backed by the installed OpenSCAD CLI.

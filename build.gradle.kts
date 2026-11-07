@@ -65,7 +65,7 @@ intellijPlatform {
             Local, private 3D model preview for OpenSCAD, STL, OBJ, and PLY files.
             Models stay on your computer; no upload or external preview server is used.
         """.trimIndent()
-        changeNotes = "Initial local preview release."
+        changeNotes = "Rename the public plugin to LingdongAI 3D Model Preview and keep all 3D processing local."
         ideaVersion {
             sinceBuild = providers.gradleProperty("platformSinceBuild")
         }

@@ -2,7 +2,7 @@
 
 ## Supported Version
 
-Security fixes are applied to the latest released version of OpenModel Preview.
+Security fixes are applied to the latest released version of LingdongAI 3D Model Preview.
 
 ## Reporting a Vulnerability
 

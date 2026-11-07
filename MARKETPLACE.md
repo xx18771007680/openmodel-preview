@@ -4,7 +4,7 @@
 
 ## 发布前
 
-1. Marketplace 发布者名称使用 `FIN Tools`，并与 `plugin.xml` 保持一致。
+1. Marketplace 公开插件名称使用 `LingdongAI 3D Model Preview`，发布者名称使用 `LingdongAI`，Vendor ID 使用 `lingdongai`，并与 `plugin.xml` 保持一致。
 2. 在 Marketplace 创建插件条目，确认插件 ID 为 `com.fin.openmodel.preview`。
 3. 将公开源码地址填写为 `https://github.com/xx18771007680/openmodel-preview`。
 4. 上传 `docs/marketplace/openmodel-preview-1280x800.png` 真实 IDE 预览截图。
@@ -52,5 +52,5 @@ PUBLISH_TOKEN="..." ./gradlew publishPlugin
 
 - License: Apache-2.0
 - Pricing: Free
-- Privacy: no model upload, no preview server, no analytics in version 0.1.0
+- Privacy: no model upload, no preview server, no analytics in version 0.1.1
 - Supported IDE baseline: WebStorm 2026.3 / build 263+

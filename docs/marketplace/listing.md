@@ -1,10 +1,11 @@
-# OpenModel Preview Marketplace Listing
+# LingdongAI 3D Model Preview Marketplace Listing
 
 ## Basic information
 
-- **Name:** OpenModel Preview
+- **Name:** LingdongAI 3D Model Preview
 - **Plugin ID:** `com.fin.openmodel.preview`
-- **Vendor:** FIN Tools
+- **Vendor:** LingdongAI
+- **Vendor ID:** `lingdongai`
 - **License:** Apache License 2.0
 - **Pricing:** Free
 - **Source code:** https://github.com/xx18771007680/openmodel-preview
@@ -19,7 +20,7 @@ Preview OpenSCAD, STL, OBJ, and PLY models directly in JetBrains IDEs without up
 
 ## Full description
 
-OpenModel Preview adds a private, local 3D model viewer to JetBrains IDEs.
+LingdongAI 3D Model Preview adds a private, local 3D model viewer to JetBrains IDEs.
 
 Open `.scad`, `.stl`, `.obj`, or `.ply` files directly in the editor and inspect the model with orbit, zoom, fit-to-view, and grid controls. OpenSCAD files use a split source and preview editor, so code and geometry stay visible together.
 
@@ -38,7 +39,13 @@ OpenSCAD must be installed locally to preview `.scad` files. STL, OBJ, and PLY p
 
 ### Current limitations
 
-OBJ materials and textures are not rendered in version 0.1.0. The plugin currently targets JetBrains IDEs based on build 263 or later.
+OBJ materials and textures are not rendered in version 0.1.1. The plugin currently targets JetBrains IDEs based on build 263 or later.
+
+## Release notes 0.1.1
+
+- Rename the public plugin to LingdongAI 3D Model Preview.
+- Keep the stable plugin ID for normal upgrades from 0.1.0.
+- Keep all model processing local with no upload, server, analytics, or telemetry.
 
 ## Release notes 0.1.0
 
@@ -49,7 +56,7 @@ OBJ materials and textures are not rendered in version 0.1.0. The plugin current
 
 ## Privacy declaration
 
-OpenModel Preview processes model data locally. Version 0.1.0 does not collect, transmit, sell, or share personal data, model contents, source code, file paths, analytics, or telemetry.
+LingdongAI 3D Model Preview processes model data locally. Version 0.1.1 does not collect, transmit, sell, or share personal data, model contents, source code, file paths, analytics, or telemetry.
 
 ## Screenshot
 

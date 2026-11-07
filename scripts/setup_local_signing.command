@@ -26,7 +26,7 @@ if [[ -e "$private_key_path" || -e "$certificate_path" ]]; then
     if [[ -f "$private_key_path" && -f "$certificate_path" ]] \
         && security find-generic-password -a "$keychain_account" -s "$keychain_service" >/dev/null 2>&1; then
         chmod 600 "$private_key_path" "$certificate_path"
-        print "OpenModel Preview signing is already configured. Existing material was not changed."
+        print "LingdongAI 3D Model Preview signing is already configured. Existing material was not changed."
         exit 0
     fi
 
@@ -55,7 +55,7 @@ openssl req \
     -days 3650 \
     -key "$private_key_path" \
     -passin fd:3 \
-    -subj "/CN=OpenModel Preview/O=FIN Tools/OU=Open Source" \
+    -subj "/CN=LingdongAI 3D Model Preview/O=LingdongAI/OU=Open Source" \
     -out "$certificate_path" 3<<<"$private_key_password" >/dev/null 2>&1
 
 security add-generic-password \
@@ -65,5 +65,5 @@ security add-generic-password \
     -U >/dev/null
 
 chmod 600 "$private_key_path" "$certificate_path"
-print "OpenModel Preview signing is configured outside the repository."
+print "LingdongAI 3D Model Preview signing is configured outside the repository."
 print "The encrypted private key password is stored in macOS Keychain."
