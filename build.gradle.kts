@@ -51,6 +51,10 @@ tasks {
     patchPluginXml {
         sinceBuild.set(providers.gradleProperty("platformSinceBuild"))
     }
+
+    named("verifyPluginSignature") {
+        dependsOn("signPlugin")
+    }
 }
 
 intellijPlatform {
@@ -65,5 +69,15 @@ intellijPlatform {
         ideaVersion {
             sinceBuild = providers.gradleProperty("platformSinceBuild")
         }
+    }
+
+    signing {
+        certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
+        privateKey = providers.environmentVariable("PRIVATE_KEY")
+        password = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
+    }
+
+    publishing {
+        token = providers.environmentVariable("PUBLISH_TOKEN")
     }
 }
