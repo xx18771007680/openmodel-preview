@@ -1,0 +1,26 @@
+<idea-plugin>
+    <id>com.fin.openmodel.preview</id>
+    <name>OpenModel Preview</name>
+    <vendor>FIN Tools</vendor>
+
+    <description><![CDATA[
+        Preview OpenSCAD, STL, OBJ, and PLY models directly in JetBrains IDEs.
+        All parsing and rendering stays local. OpenSCAD files are rendered with the
+        OpenSCAD executable installed on the same computer.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.jcef</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType name="OpenSCAD"
+                  implementationClass="com.fin.openmodel.file.OpenScadFileType"
+                  fieldName="INSTANCE"
+                  extensions="scad"/>
+        <fileType name="3D Mesh"
+                  implementationClass="com.fin.openmodel.file.MeshFileType"
+                  fieldName="INSTANCE"
+                  extensions="stl;obj;ply"/>
+        <fileEditorProvider implementation="com.fin.openmodel.editor.ModelFileEditorProvider"/>
+    </extensions>
+</idea-plugin>

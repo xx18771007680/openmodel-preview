@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --surface: #f5f7fa;
+      --surface-strong: #ffffff;
+      --ink: #172033;
+      --muted: #647084;
+      --line: rgba(23, 32, 51, 0.15);
+      --accent: #1769e0;
+      --danger: #c83b51;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --surface: #171a20;
+        --surface-strong: #22262e;
+        --ink: #eef3fa;
+        --muted: #a3adba;
+        --line: rgba(238, 243, 250, 0.15);
+        --accent: #62a2ff;
+        --danger: #ff7889;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--surface);
+      color: var(--ink);
+      font: 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+      user-select: none;
+    }
+
+    #viewport, canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    canvas { touch-action: none; cursor: grab; }
+    canvas:active { cursor: grabbing; }
+
+    .topbar {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .identity {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 8px;
+    }
+
+    .mark {
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--accent);
+      transform: rotate(30deg) skewY(-6deg);
+      opacity: 0.9;
+    }
+
+    .name {
+      max-width: min(52vw, 420px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .loading {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 0 rgba(23, 105, 224, 0.35);
+      animation: pulse 1.2s ease-out infinite;
+    }
+
+    .loading[hidden] { display: none; }
+
+    @keyframes pulse {
+      75%, 100% { box-shadow: 0 0 0 7px rgba(23, 105, 224, 0); }
+    }
+
+    .tools {
+      display: flex;
+      gap: 6px;
+      pointer-events: auto;
+    }
+
+    button {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: color-mix(in srgb, var(--surface-strong) 88%, transparent);
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    button:hover, button.active {
+      border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+      color: var(--accent);
+    }
+
+    .fit-icon {
+      width: 14px;
+      height: 14px;
+      border: 1.5px solid currentColor;
+      border-radius: 50%;
+      position: relative;
+    }
+
+    .fit-icon::before, .fit-icon::after {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border: solid currentColor;
+      border-width: 1px 0;
+    }
+
+    .fit-icon::after { transform: rotate(90deg); }
+
+    .grid-icon {
+      width: 15px;
+      height: 15px;
+      background-image:
+        linear-gradient(currentColor 1px, transparent 1px),
+        linear-gradient(90deg, currentColor 1px, transparent 1px);
+      background-size: 5px 5px;
+      border: 1px solid currentColor;
+      opacity: 0.9;
+    }
+
+    .meta {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 11px;
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      pointer-events: none;
+    }
+
+    #error {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      min-height: 38px;
+      padding: 10px 14px;
+      background: color-mix(in srgb, var(--danger) 12%, var(--surface-strong));
+      border-top: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+      color: var(--danger);
+      white-space: pre-wrap;
+      user-select: text;
+    }
+
+    #error[hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <div id="viewport"><canvas id="scene"></canvas></div>
+  <div class="topbar">
+    <div class="identity">
+      <span class="mark" aria-hidden="true"></span>
+      <span id="model-name" class="name">OpenModel Preview</span>
+      <span id="loading" class="loading" title="Rendering"></span>
+    </div>
+    <div class="tools">
+      <button id="fit" type="button" title="Fit view" aria-label="Fit view"><span class="fit-icon"></span></button>
+      <button id="grid" class="active" type="button" title="Toggle grid" aria-label="Toggle grid"><span class="grid-icon"></span></button>
+    </div>
+  </div>
+  <div class="meta"><span id="triangles">No mesh</span><span id="dimensions"></span></div>
+  <div id="error" role="alert" hidden></div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const canvas = document.getElementById("scene");
+      const nameElement = document.getElementById("model-name");
+      const trianglesElement = document.getElementById("triangles");
+      const dimensionsElement = document.getElementById("dimensions");
+      const loadingElement = document.getElementById("loading");
+      const errorElement = document.getElementById("error");
+      const fitButton = document.getElementById("fit");
+      const gridButton = document.getElementById("grid");
+      const gl = canvas.getContext("webgl", { antialias: true, alpha: false });
+
+      let meshProgram;
+      let lineProgram;
+      let meshPositionBuffer;
+      let meshNormalBuffer;
+      let meshVertexCount = 0;
+      let lineBuffer;
+      let lineColorBuffer;
+      let lineVertexCount = 0;
+      let yaw = -0.65;
+      let pitch = 0.52;
+      let distance = 4.2;
+      let dragging = false;
+      let lastX = 0;
+      let lastY = 0;
+      let showGrid = true;
+
+      if (!gl) {
+        showError("WebGL is unavailable in this IDE runtime.");
+        return;
+      }
+
+      const meshVertexShader = `
+        attribute vec3 aPosition;
+        attribute vec3 aNormal;
+        uniform mat4 uMvp;
+        uniform mat4 uModel;
+        varying vec3 vNormal;
+        varying vec3 vPosition;
+        void main() {
+          vec4 modelPosition = uModel * vec4(aPosition, 1.0);
+          vPosition = modelPosition.xyz;
+          vNormal = normalize(mat3(uModel) * aNormal);
+          gl_Position = uMvp * vec4(aPosition, 1.0);
+        }
+      `;
+
+      const meshFragmentShader = `
+        precision mediump float;
+        varying vec3 vNormal;
+        varying vec3 vPosition;
+        void main() {
+          vec3 normal = normalize(vNormal);
+          vec3 lightDirection = normalize(vec3(0.45, -0.35, 0.82));
+          float diffuse = max(dot(normal, lightDirection), 0.0);
+          float rim = pow(1.0 - abs(normal.z), 2.0);
+          vec3 base = vec3(0.10, 0.47, 0.78);
+          vec3 warm = vec3(0.95, 0.55, 0.28) * rim * 0.16;
+          vec3 color = base * (0.34 + diffuse * 0.76) + warm;
+          gl_FragColor = vec4(color, 1.0);
+        }
+      `;
+
+      const lineVertexShader = `
+        attribute vec3 aPosition;
+        attribute vec3 aColor;
+        uniform mat4 uMvp;
+        varying vec3 vColor;
+        void main() {
+          vColor = aColor;
+          gl_Position = uMvp * vec4(aPosition, 1.0);
+        }
+      `;
+
+      const lineFragmentShader = `
+        precision mediump float;
+        varying vec3 vColor;
+        void main() { gl_FragColor = vec4(vColor, 0.72); }
+      `;
+
+      meshProgram = createProgram(meshVertexShader, meshFragmentShader);
+      lineProgram = createProgram(lineVertexShader, lineFragmentShader);
+      meshPositionBuffer = gl.createBuffer();
+      meshNormalBuffer = gl.createBuffer();
+      buildGuideLines();
+
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LEQUAL);
+
+      function createShader(type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+          throw new Error(gl.getShaderInfoLog(shader) || "Shader compilation failed");
+        }
+        return shader;
+      }
+
+      function createProgram(vertexSource, fragmentSource) {
+        const program = gl.createProgram();
+        gl.attachShader(program, createShader(gl.VERTEX_SHADER, vertexSource));
+        gl.attachShader(program, createShader(gl.FRAGMENT_SHADER, fragmentSource));
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+          throw new Error(gl.getProgramInfoLog(program) || "Shader linking failed");
+        }
+        return program;
+      }
+
+      function decodeFloat32(encoded) {
+        const binary = atob(encoded);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        if (new Uint8Array(new Uint16Array([1]).buffer)[0] === 1) {
+          return new Float32Array(bytes.buffer);
+        }
+        const view = new DataView(bytes.buffer);
+        const values = new Float32Array(bytes.length / 4);
+        for (let i = 0; i < values.length; i += 1) {
+          values[i] = view.getFloat32(i * 4, true);
+        }
+        return values;
+      }
+
+      function loadMesh(payload) {
+        try {
+          const positions = decodeFloat32(payload.positions);
+          const normals = decodeFloat32(payload.normals);
+          const bounds = payload.bounds;
+          const center = [
+            (bounds[0] + bounds[3]) * 0.5,
+            (bounds[1] + bounds[4]) * 0.5,
+            (bounds[2] + bounds[5]) * 0.5
+          ];
+          const spans = [bounds[3] - bounds[0], bounds[4] - bounds[1], bounds[5] - bounds[2]];
+          const scale = 2.0 / Math.max(spans[0], spans[1], spans[2], 1.0e-9);
+          for (let i = 0; i < positions.length; i += 3) {
+            positions[i] = (positions[i] - center[0]) * scale;
+            positions[i + 1] = (positions[i + 1] - center[1]) * scale;
+            positions[i + 2] = (positions[i + 2] - center[2]) * scale;
+          }
+
+          gl.bindBuffer(gl.ARRAY_BUFFER, meshPositionBuffer);
+          gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+          gl.bindBuffer(gl.ARRAY_BUFFER, meshNormalBuffer);
+          gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);
+          meshVertexCount = positions.length / 3;
+
+          nameElement.textContent = payload.name;
+          trianglesElement.textContent = payload.triangles.toLocaleString() + " triangles";
+          dimensionsElement.textContent = spans.map(formatNumber).join(" x ");
+          errorElement.hidden = true;
+          setLoading(false);
+          fitView();
+        } catch (error) {
+          showError(error.message || String(error));
+        }
+      }
+
+      function buildGuideLines() {
+        const points = [];
+        const colors = [];
+        const gridColor = [0.46, 0.50, 0.58];
+        for (let step = -8; step <= 8; step += 1) {
+          const value = step / 4;
+          addLine(points, colors, [-2, value, -1.05], [2, value, -1.05], gridColor);
+          addLine(points, colors, [value, -2, -1.05], [value, 2, -1.05], gridColor);
+        }
+        addLine(points, colors, [0, 0, -1.05], [1.45, 0, -1.05], [0.92, 0.24, 0.30]);
+        addLine(points, colors, [0, 0, -1.05], [0, 1.45, -1.05], [0.18, 0.70, 0.43]);
+        addLine(points, colors, [0, 0, -1.05], [0, 0, 0.40], [0.20, 0.48, 0.96]);
+        lineBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, lineBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points), gl.STATIC_DRAW);
+        lineColorBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, lineColorBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+        lineVertexCount = points.length / 3;
+      }
+
+      function addLine(points, colors, start, end, color) {
+        points.push(...start, ...end);
+        colors.push(...color, ...color);
+      }
+
+      function resize() {
+        const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        const width = Math.max(1, Math.floor(canvas.clientWidth * ratio));
+        const height = Math.max(1, Math.floor(canvas.clientHeight * ratio));
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+        gl.viewport(0, 0, width, height);
+      }
+
+      function render() {
+        resize();
+        const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+        const background = dark ? [0.09, 0.105, 0.13, 1] : [0.96, 0.97, 0.985, 1];
+        gl.clearColor(...background);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        const aspect = canvas.width / Math.max(canvas.height, 1);
+        const projection = perspective(0.78, aspect, 0.1, 100);
+        const rotation = multiply(rotationX(pitch), rotationZ(yaw));
+        const view = translation(0, 0, -distance);
+        const mvp = multiply(projection, multiply(view, rotation));
+
+        if (showGrid) {
+          gl.useProgram(lineProgram);
+          bindAttribute(lineProgram, "aPosition", lineBuffer);
+          bindAttribute(lineProgram, "aColor", lineColorBuffer);
+          gl.uniformMatrix4fv(gl.getUniformLocation(lineProgram, "uMvp"), false, mvp);
+          gl.drawArrays(gl.LINES, 0, lineVertexCount);
+        }
+
+        if (meshVertexCount > 0) {
+          gl.useProgram(meshProgram);
+          bindAttribute(meshProgram, "aPosition", meshPositionBuffer);
+          bindAttribute(meshProgram, "aNormal", meshNormalBuffer);
+          gl.uniformMatrix4fv(gl.getUniformLocation(meshProgram, "uMvp"), false, mvp);
+          gl.uniformMatrix4fv(gl.getUniformLocation(meshProgram, "uModel"), false, rotation);
+          gl.drawArrays(gl.TRIANGLES, 0, meshVertexCount);
+        }
+        requestAnimationFrame(render);
+      }
+
+      function bindAttribute(program, name, buffer) {
+        const location = gl.getAttribLocation(program, name);
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.enableVertexAttribArray(location);
+        gl.vertexAttribPointer(location, 3, gl.FLOAT, false, 0, 0);
+      }
+
+      function perspective(fieldOfView, aspect, near, far) {
+        const f = 1 / Math.tan(fieldOfView / 2);
+        const range = 1 / (near - far);
+        return new Float32Array([
+          f / aspect, 0, 0, 0,
+          0, f, 0, 0,
+          0, 0, (near + far) * range, -1,
+          0, 0, near * far * range * 2, 0
+        ]);
+      }
+
+      function translation(x, y, z) {
+        return new Float32Array([
+          1, 0, 0, 0,
+          0, 1, 0, 0,
+          0, 0, 1, 0,
+          x, y, z, 1
+        ]);
+      }
+
+      function rotationX(angle) {
+        const c = Math.cos(angle);
+        const s = Math.sin(angle);
+        return new Float32Array([
+          1, 0, 0, 0,
+          0, c, s, 0,
+          0, -s, c, 0,
+          0, 0, 0, 1
+        ]);
+      }
+
+      function rotationZ(angle) {
+        const c = Math.cos(angle);
+        const s = Math.sin(angle);
+        return new Float32Array([
+          c, s, 0, 0,
+          -s, c, 0, 0,
+          0, 0, 1, 0,
+          0, 0, 0, 1
+        ]);
+      }
+
+      function multiply(a, b) {
+        const out = new Float32Array(16);
+        for (let column = 0; column < 4; column += 1) {
+          for (let row = 0; row < 4; row += 1) {
+            out[column * 4 + row] =
+              a[row] * b[column * 4] +
+              a[4 + row] * b[column * 4 + 1] +
+              a[8 + row] * b[column * 4 + 2] +
+              a[12 + row] * b[column * 4 + 3];
+          }
+        }
+        return out;
+      }
+
+      function fitView() {
+        yaw = -0.65;
+        pitch = 0.52;
+        distance = 4.2;
+      }
+
+      function formatNumber(value) {
+        const absolute = Math.abs(value);
+        if (absolute >= 1000 || (absolute > 0 && absolute < 0.01)) {
+          return value.toExponential(2);
+        }
+        return Number(value.toFixed(2)).toString();
+      }
+
+      function setLoading(loading) {
+        loadingElement.hidden = !loading;
+      }
+
+      function showError(message) {
+        setLoading(false);
+        errorElement.textContent = message;
+        errorElement.hidden = false;
+      }
+
+      canvas.addEventListener("pointerdown", event => {
+        dragging = true;
+        lastX = event.clientX;
+        lastY = event.clientY;
+        canvas.setPointerCapture(event.pointerId);
+      });
+      canvas.addEventListener("pointermove", event => {
+        if (!dragging) return;
+        yaw += (event.clientX - lastX) * 0.009;
+        pitch = Math.max(-1.45, Math.min(1.45, pitch + (event.clientY - lastY) * 0.009));
+        lastX = event.clientX;
+        lastY = event.clientY;
+      });
+      canvas.addEventListener("pointerup", () => { dragging = false; });
+      canvas.addEventListener("pointercancel", () => { dragging = false; });
+      canvas.addEventListener("wheel", event => {
+        event.preventDefault();
+        distance = Math.max(2.0, Math.min(12.0, distance * Math.exp(event.deltaY * 0.001)));
+      }, { passive: false });
+      canvas.addEventListener("dblclick", fitView);
+      fitButton.addEventListener("click", fitView);
+      gridButton.addEventListener("click", () => {
+        showGrid = !showGrid;
+        gridButton.classList.toggle("active", showGrid);
+      });
+
+      window.OpenModel = { loadMesh, showError, setLoading };
+      requestAnimationFrame(render);
+    })();
+  </script>
+</body>
+</html>
